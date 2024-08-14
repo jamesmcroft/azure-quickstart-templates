@@ -117,6 +117,21 @@ resource keyVault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   }
 }
 
+resource keyVaultAdministratorRole 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = if (userObjectId != '') {
+  name: '00482a5a-887f-4fb3-b363-3b7fe8e74483'
+  scope: resourceGroup()
+}
+
+resource keyVaultAdministratorRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (userObjectId != '') {
+  name: guid(keyVault.id, userObjectId, keyVaultAdministratorRole.id)
+  scope: keyVault
+  properties: {
+    principalId: userObjectId
+    roleDefinitionId: keyVaultAdministratorRole.id
+    principalType: 'User'
+  }
+}
+
 resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = {
   name: aiServicesName
   location: location
@@ -128,9 +143,10 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2024-04-01-preview' = 
     type: 'SystemAssigned'
   }
   properties: {
+    customSubDomainName: aiServicesName
+    disableLocalAuth: true // Ensures that the service disables key-based authentication
     apiProperties: {
       statisticsEnabled: false
-      disableLocalAuth: true // Ensures that the service disables key-based authentication
     }
   }
 }
